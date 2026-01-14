@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-espresso-900: #3C2A21;
+  --color-espresso-100: #F4E0B9;
+
+  /* Add custom animation if needed, e.g. for pulse-slow */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--color-espresso-100);
+  color: var(--color-espresso-900);
+}
+
+@layer components {
+  .input-field {
+    @apply w-full p-3 rounded-lg border border-espresso-900/20 bg-white focus:ring-2 focus:ring-espresso-900 focus:outline-none transition-all;
+  }
+
+  .btn-primary {
+    @apply w-full py-3 bg-espresso-900 text-white rounded-lg font-semibold hover:bg-espresso-900/90 transition shadow-sm active:scale-[0.98];
+  }
+}
