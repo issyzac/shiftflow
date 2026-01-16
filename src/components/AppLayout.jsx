@@ -21,7 +21,7 @@ export default function AppLayout({ children }) {
                     <p className="px-3 text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Operations</p>
                     <NavItem to="/" icon={<Coffee size={20} />} label="Daily Opening" active={isActive('/')} />
                     <NavItem to="/dashboard" icon={<LayoutDashboard size={20} />} label="Barista Dashboard" active={isActive('/dashboard')} />
-                    <NavItem to="/c-suite" icon={<Users size={20} />} label="C-Suite Portal" active={isActive('/c-suite')} />
+                    <NavItem to="/core" icon={<Users size={20} />} label="Core Portal" active={isActive('/core')} />
                 </nav>
 
                 <div className="p-4 border-t border-white/10">

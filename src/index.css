@@ -1,28 +1,48 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
 @theme {
+  /* Main Resume/Dark Aesthetics */
+  --color-enzi-black: #050505;
+  --color-enzi-card: #121212;
+  --color-enzi-gold: #D4AF37;
+  --color-enzi-gold-dim: #AA8C2C;
+  --color-enzi-text: #F9FAFB;
+  --color-enzi-muted: #9CA3AF;
+
+  /* Retaining espresso names for backward compat but remapping mainly to dark theme logic if needed, 
+     or we will replace usages. Let's keep these as "Legacy" or just override them. 
+     Actually, let's just make espresso-900 the dark and espresso-100 the light text for now to minimize breakage???
+     No, better to be explicit.
+  */
   --color-espresso-900: #3C2A21;
+  /* Keeping for now */
   --color-espresso-100: #F4E0B9;
 
-  /* Add custom animation if needed, e.g. for pulse-slow */
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --font-sans: 'Outfit', sans-serif;
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', sans-serif;
+  color-scheme: dark;
 }
 
 body {
-  background-color: var(--color-espresso-100);
-  color: var(--color-espresso-900);
+  background-color: var(--color-enzi-black);
+  color: var(--color-enzi-text);
 }
 
 @layer components {
   .input-field {
-    @apply w-full p-3 rounded-lg border border-espresso-900/20 bg-white focus:ring-2 focus:ring-espresso-900 focus:outline-none transition-all;
+    @apply w-full p-3 rounded-lg border border-enzi-muted/20 bg-enzi-card text-enzi-text focus:ring-1 focus:ring-enzi-gold focus:border-enzi-gold focus:outline-none transition-all placeholder:text-enzi-muted/50;
   }
 
   .btn-primary {
-    @apply w-full py-3 bg-espresso-900 text-white rounded-lg font-semibold hover:bg-espresso-900/90 transition shadow-sm active:scale-[0.98];
+    @apply w-full py-3 bg-transparent border border-enzi-gold text-enzi-gold rounded-lg font-semibold hover:bg-enzi-gold hover:text-enzi-black transition shadow-sm active:scale-[0.98] uppercase tracking-wider flex items-center justify-center gap-2;
+  }
+
+  .card-panel {
+    @apply bg-enzi-card border border-enzi-muted/10 rounded-xl shadow-lg backdrop-blur-sm;
   }
 }

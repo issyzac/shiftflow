@@ -1,31 +1,89 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import OpeningPage from './pages/OpeningPage';
 import DashboardPage from './pages/DashboardPage';
-import CSuitePage from './pages/CSuitePage';
+import CorePage from './pages/CorePage';
+import CommunicationsPage from './pages/CommunicationsPage';
+import LoginPage from './pages/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import hzeLogo from './assets/hze-icon.png';
+
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-espresso-100 text-espresso-900">Loading...</div>;
+
+  if (!user) return <Navigate to="/" replace />;
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />; // Or unauthorized page
+  }
+
+  return children;
+};
+
+const AppContent = () => {
+  const { user, activeShift, loading } = useAuth();
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-espresso-100 text-espresso-900">Loading App...</div>;
+
+  // If not logged in, show Login Page
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  // If logged in, route based on Role and State
+  return (
+    <div className="min-h-screen bg-enzi-black text-enzi-text font-sans">
+      {/* Simple Navbar for logged in users */}
+      <nav className="bg-enzi-card/50 backdrop-blur-md border-b border-enzi-muted/10 sticky top-0 z-50">
+        <div className="container mx-auto p-4 max-w-3xl flex justify-between items-center">
+          <h1 className="text-xl font-bold tracking-wider text-enzi-text flex items-center gap-2">
+            <img src={hzeLogo} alt="HZE Logo" className="w-6 h-6" /> Shiftflow
+          </h1>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-enzi-muted font-medium uppercase tracking-wide">{user.name} <span className="text-enzi-gold">({user.role})</span></span>
+            {/* Logout button could go here, or in settings */}
+          </div>
+        </div>
+      </nav>
+
+      <main className="container mx-auto p-4 max-w-3xl">
+        <Routes>
+          {/* Barista Routes */}
+          {user.role === 'barista' && (
+            <>
+              <Route path="/" element={
+                activeShift ? <Navigate to="/dashboard" replace /> : <OpeningPage />
+              } />
+              <Route path="/dashboard" element={
+                activeShift ? <DashboardPage /> : <Navigate to="/" replace />
+              } />
+            </>
+          )}
+
+          {/* Manager/Core Routes */}
+          {(user.role === 'manager' || user.role === 'core') && (
+            <>
+              <Route path="/" element={<Navigate to="/core" replace />} />
+              <Route path="/core" element={<CorePage />} />
+              <Route path="/core/communications" element={<CommunicationsPage />} />
+            </>
+          )}
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
+};
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-espresso-100 text-espresso-900 font-sans">
-        <nav className="bg-espresso-900 text-espresso-100 p-4 shadow-md">
-          <div className="container mx-auto flex justify-between items-center">
-            <h1 className="text-xl font-bold tracking-wider">ENZI COFFEE OPS</h1>
-            <div className="space-x-4">
-              <Link to="/" className="hover:text-white transition">Opening</Link>
-              <Link to="/dashboard" className="hover:text-white transition">Barista</Link>
-              <Link to="/c-suite" className="hover:text-white transition">C-Suite</Link>
-            </div>
-          </div>
-        </nav>
-
-        <main className="container mx-auto p-4 max-w-lg md:max-w-4xl">
-          <Routes>
-            <Route path="/" element={<OpeningPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/c-suite" element={<CSuitePage />} />
-          </Routes>
-        </main>
-      </div>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }
