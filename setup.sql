@@ -13,8 +13,9 @@ create table locations (
 create table profiles (
   id uuid references auth.users not null primary key, -- linking to supabase auth
   name text,
-  role text check (role in ('c_suite', 'manager', 'barista')),
-  location_id uuid references locations(id)
+  role text check (role in ('core', 'manager', 'barista')),
+  location_id uuid references locations(id),
+  pin text check (char_length(pin) = 4)
 );
 
 -- 3. Tasks Table
