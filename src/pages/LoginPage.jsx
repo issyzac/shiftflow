@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Users, Coffee, Briefcase, ChevronLeft, Delete } from 'lucide-react';
+import hzeLogo from '../assets/hze-icon.png';
+import hzeFullLogo from '../assets/hze-full-logo.png';
 
 const LoginPage = () => {
     const { login } = useAuth();
@@ -102,7 +104,15 @@ const LoginPage = () => {
                             <ChevronLeft size={28} />
                         </button>
                     )}
-                    <h1 className="text-2xl font-bold text-enzi-text tracking-wide"><span className="text-enzi-gold">ENZI</span> OPS</h1>
+
+                    {step === 'role' ? (
+                        <div className="flex flex-col items-center gap-3 mb-2">
+                            <img src={hzeFullLogo} alt="Shiftflow Logo" className="w-48 opacity-90 object-contain" />
+                        </div>
+                    ) : (
+                        <h1 className="text-2xl font-bold text-enzi-text tracking-wide uppercase">Shiftflow</h1>
+                    )}
+
                     <p className="text-sm text-enzi-muted font-medium mt-1">
                         {step === 'role' && "Select Your Role"}
                         {step === 'user' && "Who are you?"}
