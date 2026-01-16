@@ -1,16 +1,88 @@
-# React + Vite
+# ShiftFlow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ShiftFlow is a comprehensive shift management and operational tool designed for coffee shops. It streamlines the workflow for baristas and managers by handling shift tracking, task dispatching, communications, and wastage logging in a unified interface.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### For Baristas
+- **Shift Management**: Easy clock-in/clock-out functionality via the **Opening Page**.
+- **Dashboard**: A centralized hub aimed at daily operations.
+- **Wastage Logging**: detailed logging for inventory waste tracking.
+- **Real-time Updates**: Live updates on tasks and notifications.
 
-## React Compiler
+### For Managers & Core Team
+- **Core Dashboard**: A high-level overview of operations across locations.
+- **Task Dispatching**: Create and assign tasks to specific locations or shifts.
+- **Communications**: Manage shift briefings and announcements.
+- **Oversight**: detailed auditing and operational oversight tools.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+- **Framework**: [React](https://react.dev/) with [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) (configured with `clsx` and `tailwind-merge`)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Routing**: [React Router](https://reactrouter.com/)
+- **Backend & Auth**: [Supabase](https://supabase.com/)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📂 Project Structure
+
+```
+shiftflow/
+├── src/
+│   ├── assets/          # Static assets (images, icons)
+│   ├── components/      # Reusable UI components
+│   ├── contexts/        # React Contexts (e.g., AuthContext)
+│   ├── lib/             # Utility libraries and API clients
+│   ├── pages/           # Application views/pages
+│   │   ├── OpeningPage.jsx       # Shift start screen
+│   │   ├── DashboardPage.jsx     # Main barista dashboard
+│   │   ├── CorePage.jsx          # Manager dashboard
+│   │   ├── CommunicationsPage.jsx# Message & task management
+│   │   └── LoginPage.jsx         # Authentication screen
+│   ├── App.jsx          # Main application component & routing
+│   └── main.jsx         # Entry point
+├── public/              # Public assets
+└── ...config files
+```
+
+## 🚦 Getting Started
+
+### Prerequisites
+- Node.js (v18+ recommended)
+- A Supabase project set up (URL and Anon components required in environment variables).
+
+### Installation
+
+1.  **Clone the repository**
+    ```bash
+    git clone <repository-url>
+    cd shiftflow
+    ```
+
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
+
+3.  **Environment Setup**
+    Create a `.env` file in the root directory and add your Supabase credentials:
+    ```env
+    VITE_SUPABASE_URL=your_supabase_url
+    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+    ```
+
+4.  **Run Development Server**
+    ```bash
+    npm run dev
+    ```
+    The app should now be running at `http://localhost:5173`.
+
+## 📜 Scripts
+
+- `npm run dev`: Starts the development server.
+- `npm run build`: Builds the app for production.
+- `npm run lint`: Runs ESLint to check for code quality issues.
+- `npm run preview`: Previews the production build locally.
+
+---
+Built with ❤️ using React & Vite.
