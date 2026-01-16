@@ -6,6 +6,7 @@ import CommunicationsPage from './pages/CommunicationsPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import hzeLogo from './assets/hze-icon.png';
+import { LogOut } from 'lucide-react';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -22,7 +23,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 const AppContent = () => {
-  const { user, activeShift, loading } = useAuth();
+  const { user, activeShift, loading, logout } = useAuth();
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-espresso-100 text-espresso-900">Loading App...</div>;
 
@@ -42,7 +43,13 @@ const AppContent = () => {
           </h1>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-enzi-muted font-medium uppercase tracking-wide">{user.name} <span className="text-enzi-gold">({user.role})</span></span>
-            {/* Logout button could go here, or in settings */}
+            <button
+              onClick={logout}
+              className="p-2 text-enzi-muted hover:text-red-400 hover:bg-white/5 rounded-full transition-colors"
+              title="Logout"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </div>
       </nav>
