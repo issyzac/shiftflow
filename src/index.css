@@ -3,12 +3,13 @@
 
 @theme {
   /* Main Resume/Dark Aesthetics */
-  --color-enzi-black: #050505;
-  --color-enzi-card: #121212;
+  /* New Theme Variables (Overriden in :root) */
+  --color-enzi-black: var(--bg-main);
+  --color-enzi-card: var(--bg-card);
   --color-enzi-gold: #b37542;
   --color-enzi-gold-dim: #8F5D34;
-  --color-enzi-text: #F9FAFB;
-  --color-enzi-muted: #9CA3AF;
+  --color-enzi-text: var(--text-main);
+  --color-enzi-muted: var(--text-muted);
 
   /* Retaining espresso names for backward compat but remapping mainly to dark theme logic if needed, 
      or we will replace usages. Let's keep these as "Legacy" or just override them. 
@@ -26,6 +27,22 @@
 :root {
   font-family: 'Outfit', sans-serif;
   color-scheme: dark;
+
+  /* Default Dark Theme */
+  --bg-main: #050505;
+  --bg-card: #121212;
+  --text-main: #F9FAFB;
+  --text-muted: #9CA3AF;
+}
+
+:root.light {
+  color-scheme: light;
+  
+  /* Light Theme Overrides */
+  --bg-main: #F3F4F6;     /* gray-100 */
+  --bg-card: #FFFFFF;     /* white */
+  --text-main: #111827;   /* gray-900 */
+  --text-muted: #6B7280;  /* gray-500 */
 }
 
 body {

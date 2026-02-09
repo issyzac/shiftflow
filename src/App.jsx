@@ -3,10 +3,13 @@ import OpeningPage from './pages/OpeningPage';
 import DashboardPage from './pages/DashboardPage';
 import CorePage from './pages/CorePage';
 import CommunicationsPage from './pages/CommunicationsPage';
+import ShiftReportsPage from './pages/ShiftReportsPage';
+import InventoryPage from './pages/InventoryPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import hzeLogo from './assets/hze-icon.png';
-import { LogOut } from 'lucide-react';
+import { LogOut, Sun, Moon } from 'lucide-react';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -24,6 +27,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 const AppContent = () => {
   const { user, activeShift, loading, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-espresso-100 text-espresso-900">Loading App...</div>;
 
@@ -43,6 +47,15 @@ const AppContent = () => {
           </h1>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-enzi-muted font-medium uppercase tracking-wide">{user.name} <span className="text-enzi-gold">({user.role})</span></span>
+
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-enzi-muted hover:text-enzi-gold hover:bg-white/5 rounded-full transition-colors"
+              title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             <button
               onClick={logout}
               className="p-2 text-enzi-muted hover:text-red-400 hover:bg-white/5 rounded-full transition-colors"
@@ -74,6 +87,8 @@ const AppContent = () => {
               <Route path="/" element={<Navigate to="/core" replace />} />
               <Route path="/core" element={<CorePage />} />
               <Route path="/core/communications" element={<CommunicationsPage />} />
+              <Route path="/core/shift-reports" element={<ShiftReportsPage />} />
+              <Route path="/core/inventory" element={<InventoryPage />} />
             </>
           )}
 
@@ -89,7 +104,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );

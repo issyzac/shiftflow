@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { ClipboardList, Trash2, Wrench, PackagePlus, AlertTriangle, Plus, History, LogOut, Loader2, Check, ListTodo, Repeat, Calendar, Edit, X, PlusCircle } from 'lucide-react';
+import { ClipboardList, Trash2, Wrench, PackagePlus, AlertTriangle, Plus, History, LogOut, Loader2, Check, ListTodo, Repeat, Calendar, Edit, X, PlusCircle, CheckCircle2, Search } from 'lucide-react';
 
 export default function DashboardPage() {
     const { user, activeShift, refreshShift } = useAuth();
@@ -9,6 +9,49 @@ export default function DashboardPage() {
     const [tasks, setTasks] = useState([]);
     const [showEndShiftDialog, setShowEndShiftDialog] = useState(false);
     const [showManageBriefing, setShowManageBriefing] = useState(false);
+
+    const [elapsedTime, setElapsedTime] = useState('');
+    const [startTimeDisplay, setStartTimeDisplay] = useState('');
+
+    useEffect(() => {
+        if (activeShift?.start_time) {
+            // Set static start time display
+            const start = new Date(activeShift.start_time);
+            setStartTimeDisplay(start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
+            // Initial calculation
+            updateElapsedTime();
+
+            // Update every minute
+            const interval = setInterval(updateElapsedTime, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [activeShift]);
+
+    const updateElapsedTime = () => {
+        if (!activeShift?.start_time) return;
+
+        const start = new Date(activeShift.start_time);
+        const now = new Date();
+        const diffMs = now - start;
+
+        if (diffMs < 0) {
+            setElapsedTime('Just Started');
+            return;
+        }
+
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+
+        let timeString = '';
+        if (hours > 0) {
+            timeString = `${hours}h ${mins}m`;
+        } else {
+            timeString = `${mins}m`;
+        }
+        setElapsedTime(timeString);
+    };
 
     useEffect(() => {
         if (activeShift?.location_id) {
@@ -71,8 +114,13 @@ export default function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="text-2xl font-mono font-bold text-enzi-gold hidden md:block">
-                        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className="hidden md:flex flex-col items-end mr-2">
+                        <div className="text-2xl font-mono font-bold text-enzi-gold leading-none">
+                            {elapsedTime}
+                        </div>
+                        <div className="text-xs text-enzi-muted font-medium mt-1">
+                            Started at {startTimeDisplay}
+                        </div>
                     </div>
                     <button
                         onClick={() => setShowEndShiftDialog(true)}
@@ -196,14 +244,11 @@ function TabButton({ active, onClick, icon, label }) {
 
 function WastageSection({ activeShift }) {
     const [logs, setLogs] = useState([]);
+    const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [form, setForm] = useState({
-        item_type: '',
-        quantity: '',
-        reason: ''
-    });
 
     const fetchLogs = async () => {
+        setLoading(true);
         const { data, error } = await supabase
             .from('wastage_logs')
             .select('*')
@@ -211,11 +256,83 @@ function WastageSection({ activeShift }) {
             .order('logged_at', { ascending: false });
 
         if (data) setLogs(data);
+        setLoading(false);
     };
 
     useEffect(() => {
         fetchLogs();
     }, [activeShift.id]);
+
+    return (
+        <div className="space-y-4">
+            {/* Alert Banner Example */}
+            <div className="bg-red-900/20 border border-red-900/30 p-4 rounded-lg flex gap-3 text-red-400 animate-pulse-slow">
+                <AlertTriangle className="shrink-0" />
+                <div>
+                    <p className="font-bold text-sm">Action Required</p>
+                    <p className="text-xs mt-1">Check opened Sparkling Water expiry.</p>
+                </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+                <h3 className="font-bold text-enzi-text flex items-center gap-2">
+                    <Trash2 className="text-enzi-gold" size={22} />
+                    Today's Wastage
+                </h3>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="btn-primary flex items-center gap-2 py-2 px-3 text-sm"
+                >
+                    <Plus size={16} />
+                    Log Wastage
+                </button>
+            </div>
+
+            <div className="space-y-3">
+                {loading ? (
+                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-enzi-muted" /></div>
+                ) : logs.length === 0 ? (
+                    <div className="card-panel p-8 text-center border-dashed">
+                        <CheckCircle2 className="mx-auto text-green-500/50 mb-2" size={32} />
+                        <p className="text-enzi-muted italic">No wastage logged yet.</p>
+                        <p className="text-xs text-enzi-muted/50 mt-1">Keep it up!</p>
+                    </div>
+                ) : (
+                    logs.map(log => (
+                        <div key={log.id} className="bg-enzi-black p-3 rounded-lg flex justify-between items-center shadow-sm border border-enzi-muted/10">
+                            <div>
+                                <p className="font-semibold text-enzi-text">{log.item_type} <span className="text-sm font-normal text-enzi-muted">x{log.quantity}</span></p>
+                                <p className="text-xs text-red-400">{log.reason}</p>
+                            </div>
+                            <span className="text-xs text-enzi-muted/50 font-mono">
+                                {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {showModal && (
+                <LogWastageModal
+                    activeShift={activeShift}
+                    onClose={() => setShowModal(false)}
+                    onSuccess={() => {
+                        setShowModal(false);
+                        fetchLogs();
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+function LogWastageModal({ activeShift, onClose, onSuccess }) {
+    const [loading, setLoading] = useState(false);
+    const [form, setForm] = useState({
+        item_type: '',
+        quantity: '',
+        reason: ''
+    });
 
     const handleSubmit = async () => {
         if (!form.item_type || !form.quantity || !form.reason) return;
@@ -232,9 +349,7 @@ function WastageSection({ activeShift }) {
             ]);
 
             if (error) throw error;
-
-            setForm({ item_type: '', quantity: '', reason: '' });
-            fetchLogs();
+            onSuccess();
         } catch (error) {
             console.error('Error logging wastage:', error);
             alert('Failed to log wastage');
@@ -244,69 +359,73 @@ function WastageSection({ activeShift }) {
     };
 
     return (
-        <div className="space-y-4">
-            {/* Alert Banner Example - Static for now, could be dynamic based on shift start time */}
-            <div className="bg-red-900/20 border border-red-900/30 p-4 rounded-lg flex gap-3 text-red-400 animate-pulse-slow">
-                <AlertTriangle className="shrink-0" />
-                <div>
-                    <p className="font-bold text-sm">Action Required</p>
-                    <p className="text-xs mt-1">Check opened Sparkling Water expiry.</p>
-                </div>
-            </div>
-
-            <div className="card-panel p-6">
-                <h3 className="font-bold mb-4 flex items-center gap-2">Log New Wastage</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <select
-                        className="input-field"
-                        value={form.item_type}
-                        onChange={e => setForm({ ...form, item_type: e.target.value })}
-                    >
-                        <option value="">Select Item Type...</option>
-                        <option value="Pastry">Pastry</option>
-                        <option value="Milk/Dairy">Milk/Dairy</option>
-                        <option value="Espresso Beans">Espresso Beans</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    <input
-                        type="number"
-                        placeholder="Quantity"
-                        className="input-field"
-                        value={form.quantity}
-                        onChange={e => setForm({ ...form, quantity: e.target.value })}
-                    />
-                    <textarea
-                        placeholder="Reason (e.g. Broken, Expired)"
-                        className="input-field md:col-span-2"
-                        rows="2"
-                        value={form.reason}
-                        onChange={e => setForm({ ...form, reason: e.target.value })}
-                    ></textarea>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="md:col-span-2 btn-primary flex justify-center items-center gap-2 disabled:opacity-50"
-                    >
-                        {loading ? <Loader2 className="animate-spin" /> : <Plus size={18} />}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="card-panel p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg text-enzi-text flex items-center gap-2">
+                        <Trash2 className="text-enzi-gold" size={20} />
                         Log Wastage
+                    </h3>
+                    <button onClick={onClose} className="text-enzi-muted hover:text-white">
+                        <X size={20} />
                     </button>
                 </div>
-            </div>
 
-            <div className="space-y-2">
-                <h4 className="text-sm font-bold text-enzi-muted uppercase tracking-wider">Today's Logs</h4>
-                {logs.length === 0 && <p className="text-sm text-enzi-muted italic">No wastage logged yet.</p>}
-                {logs.map(log => (
-                    <div key={log.id} className="bg-enzi-black p-3 rounded-lg flex justify-between items-center shadow-sm border border-enzi-muted/10">
-                        <div>
-                            <p className="font-semibold text-enzi-text">{log.item_type} <span className="text-sm font-normal text-enzi-muted">x{log.quantity}</span></p>
-                            <p className="text-xs text-red-400">{log.reason}</p>
-                        </div>
-                        <span className="text-xs text-enzi-muted/50 font-mono">
-                            {new Date(log.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                <div className="grid gap-4">
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-enzi-muted uppercase">Item Type</label>
+                        <select
+                            className="input-field w-full"
+                            value={form.item_type}
+                            onChange={e => setForm({ ...form, item_type: e.target.value })}
+                        >
+                            <option value="">Select Item Type...</option>
+                            <option value="Pastry">Pastry</option>
+                            <option value="Milk/Dairy">Milk/Dairy</option>
+                            <option value="Espresso Beans">Espresso Beans</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
-                ))}
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-enzi-muted uppercase">Quantity</label>
+                        <input
+                            type="number"
+                            placeholder="Qty"
+                            className="input-field w-full"
+                            value={form.quantity}
+                            onChange={e => setForm({ ...form, quantity: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-enzi-muted uppercase">Reason</label>
+                        <textarea
+                            placeholder="Reason (e.g. Broken, Expired)"
+                            className="input-field w-full"
+                            rows="2"
+                            value={form.reason}
+                            onChange={e => setForm({ ...form, reason: e.target.value })}
+                        ></textarea>
+                    </div>
+
+                    <div className="flex gap-3 mt-2">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-2 rounded-lg border border-enzi-muted/20 text-enzi-muted hover:bg-white/5 transition font-semibold text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading || !form.item_type || !form.quantity || !form.reason}
+                            className="flex-1 btn-primary flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                            Log
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -314,26 +433,133 @@ function WastageSection({ activeShift }) {
 
 function RestockSection({ activeShift }) {
     const [requests, setRequests] = useState([]);
+    const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const fetchRequests = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('restock_requests')
+            .select('*')
+            .eq('location_id', activeShift.location_id)
+            .neq('status', 'fulfilled') // Show active requests for the location
+            .order('created_at', { ascending: false });
+
+        if (data) setRequests(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, [activeShift.id]);
+
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h3 className="font-bold text-enzi-text flex items-center gap-2">
+                    <PackagePlus className="text-enzi-gold" size={22} />
+                    Restock Requests
+                </h3>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="btn-primary flex items-center gap-2 py-2 px-3 text-sm"
+                >
+                    <Plus size={16} />
+                    Request Item
+                </button>
+            </div>
+
+            <div className="space-y-3">
+                {loading ? (
+                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-enzi-muted" /></div>
+                ) : requests.length === 0 ? (
+                    <div className="card-panel p-8 text-center border-dashed">
+                        <CheckCircle2 className="mx-auto text-green-500/50 mb-2" size={32} />
+                        <p className="text-enzi-muted italic">No active requests.</p>
+                        <p className="text-xs text-enzi-muted/50 mt-1">Stock levels are looking good!</p>
+                    </div>
+                ) : (
+                    requests.map(req => (
+                        <div key={req.id} className="flex justify-between items-center text-sm border-b border-enzi-muted/10 pb-2 last:border-0 last:pb-0 bg-enzi-black p-3 rounded-lg border">
+                            <div>
+                                <span className="font-medium text-enzi-text block">{req.item_name}</span>
+                                {req.current_quantity && <span className="text-enzi-muted text-xs">Current Qty: {req.current_quantity}</span>}
+                                {req.supplier && <span className="text-enzi-muted text-xs block">Supplier: {req.supplier}</span>}
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${req.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                                req.status === 'ordered' ? 'bg-blue-900/30 text-blue-400 border border-blue-900/20' : 'bg-green-900/30 text-green-400 border border-green-900/20'
+                                }`}>
+                                {req.status}
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {showModal && (
+                <RequestRestockModal
+                    activeShift={activeShift}
+                    onClose={() => setShowModal(false)}
+                    onSuccess={() => {
+                        setShowModal(false);
+                        fetchRequests();
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+function RequestRestockModal({ activeShift, onClose, onSuccess }) {
+    const [loading, setLoading] = useState(false);
+    const [inventory, setInventory] = useState([]);
+    const [filteredItems, setFilteredItems] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [form, setForm] = useState({
         item_name: '',
         current_quantity: '',
         supplier: ''
     });
 
-    const fetchRequests = async () => {
-        const { data, error } = await supabase
-            .from('restock_requests')
-            .select('*')
-            .eq('shift_id', activeShift.id)
-            .order('created_at', { ascending: false });
+    useEffect(() => {
+        fetchInventory();
+    }, []);
 
-        if (data) setRequests(data);
+    const fetchInventory = async () => {
+        try {
+            const { data } = await supabase
+                .from('inventory_items')
+                .select('*')
+                .order('name');
+            setInventory(data || []);
+        } catch (error) {
+            console.error('Error fetching inventory:', error);
+        }
     };
 
-    useEffect(() => {
-        fetchRequests();
-    }, [activeShift.id]);
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setForm({ ...form, item_name: value });
+
+        if (value.trim().length > 0) {
+            const filtered = inventory.filter(item =>
+                item.name.toLowerCase().includes(value.toLowerCase())
+            );
+            setFilteredItems(filtered);
+            setShowSuggestions(true);
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const selectItem = (item) => {
+        setForm({
+            ...form,
+            item_name: item.name,
+            supplier: '' // Reset or potentially fetch supplier if linked in future
+        });
+        setShowSuggestions(false);
+    };
 
     const handleSubmit = async () => {
         if (!form.item_name) return;
@@ -343,6 +569,7 @@ function RestockSection({ activeShift }) {
             const { error } = await supabase.from('restock_requests').insert([
                 {
                     shift_id: activeShift.id,
+                    location_id: activeShift.location_id,
                     item_name: form.item_name,
                     current_quantity: form.current_quantity ? parseInt(form.current_quantity) : null,
                     supplier: form.supplier
@@ -350,8 +577,7 @@ function RestockSection({ activeShift }) {
             ]);
 
             if (error) throw error;
-            setForm({ item_name: '', current_quantity: '', supplier: '' });
-            fetchRequests();
+            onSuccess();
         } catch (error) {
             console.error("Error requesting restock:", error);
             alert("Failed to request restock");
@@ -361,62 +587,99 @@ function RestockSection({ activeShift }) {
     };
 
     return (
-        <div className="space-y-4">
-            <div className="card-panel p-6">
-                <h3 className="font-bold mb-4 text-enzi-text">Request Restock</h3>
-                <div className="grid gap-4">
-                    <input
-                        type="text"
-                        placeholder="Item Name (e.g. Oat Milk)"
-                        className="input-field"
-                        value={form.item_name}
-                        onChange={e => setForm({ ...form, item_name: e.target.value })}
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                        <input
-                            type="number"
-                            placeholder="Current Qty"
-                            className="input-field"
-                            value={form.current_quantity}
-                            onChange={e => setForm({ ...form, current_quantity: e.target.value })}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Supplier"
-                            className="input-field"
-                            value={form.supplier}
-                            onChange={e => setForm({ ...form, supplier: e.target.value })}
-                        />
-                    </div>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="btn-primary flex justify-center items-center gap-2 disabled:opacity-50"
-                    >
-                        {loading ? <Loader2 className="animate-spin" /> : <PackagePlus size={18} />}
-                        Submit Request
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="card-panel p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg text-enzi-text flex items-center gap-2">
+                        <PackagePlus className="text-enzi-gold" size={20} />
+                        Request Restock
+                    </h3>
+                    <button onClick={onClose} className="text-enzi-muted hover:text-white">
+                        <X size={20} />
                     </button>
                 </div>
-            </div>
 
-            <div className="card-panel p-4">
-                <h4 className="font-bold mb-3 text-sm text-enzi-text">Pending Orders</h4>
-                {requests.length === 0 && <div className="text-sm text-enzi-muted italic">No pending orders.</div>}
-
-                <div className="space-y-2">
-                    {requests.map(req => (
-                        <div key={req.id} className="flex justify-between items-center text-sm border-b border-enzi-muted/10 pb-2 last:border-0 last:pb-0">
-                            <div>
-                                <span className="font-medium text-enzi-text">{req.item_name}</span>
-                                {req.current_quantity && <span className="text-enzi-muted ml-2">(Qty: {req.current_quantity})</span>}
-                            </div>
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${req.status === 'pending' ? 'bg-yellow-900/30 text-yellow-500' :
-                                req.status === 'ordered' ? 'bg-blue-900/30 text-blue-400' : 'bg-green-900/30 text-green-400'
-                                }`}>
-                                {req.status.toUpperCase()}
-                            </span>
+                <div className="grid gap-4">
+                    <div className="space-y-1 relative">
+                        <label className="text-xs font-bold text-enzi-muted uppercase">Item Name</label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search item..."
+                                className="input-field w-full pl-9"
+                                value={form.item_name}
+                                onChange={handleSearchChange}
+                                onFocus={() => {
+                                    if (form.item_name) setShowSuggestions(true);
+                                }}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click
+                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-enzi-muted" size={16} />
                         </div>
-                    ))}
+
+                        {/* Suggestions Dropdown */}
+                        {showSuggestions && filteredItems.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-enzi-card border border-enzi-muted/20 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                {filteredItems.map(item => (
+                                    <button
+                                        key={item.id}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition flex justify-between items-center group"
+                                        onClick={() => selectItem(item)}
+                                    >
+                                        <span className="font-medium text-enzi-text">{item.name}</span>
+                                        <span className="text-[10px] text-enzi-muted bg-white/5 px-1.5 py-0.5 rounded group-hover:bg-white/10">
+                                            {item.category}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {showSuggestions && filteredItems.length === 0 && form.item_name && (
+                            <div className="absolute z-10 w-full mt-1 bg-enzi-card border border-enzi-muted/20 rounded-lg shadow-xl p-3 text-sm text-enzi-muted italic">
+                                No specific items found. You can still submit "{form.item_name}".
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-enzi-muted uppercase">Current Qty</label>
+                            <input
+                                type="number"
+                                placeholder="Qty"
+                                className="input-field w-full"
+                                value={form.current_quantity}
+                                onChange={e => setForm({ ...form, current_quantity: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-enzi-muted uppercase">Supplier</label>
+                            <input
+                                type="text"
+                                placeholder="Optional"
+                                className="input-field w-full"
+                                value={form.supplier}
+                                onChange={e => setForm({ ...form, supplier: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-2">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-2 rounded-lg border border-enzi-muted/20 text-enzi-muted hover:bg-white/5 transition font-semibold text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading || !form.item_name}
+                            className="flex-1 btn-primary flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                            Submit
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -424,32 +687,121 @@ function RestockSection({ activeShift }) {
 }
 
 function MaintenanceSection({ activeShift }) {
+    const [tickets, setTickets] = useState([]);
+    const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
+
+    const fetchTickets = async () => {
+        setLoading(true);
+        const today = new Date().toISOString().split('T')[0];
+        const startOfDay = `${today}T00:00:00.000Z`;
+        const endOfDay = `${today}T23:59:59.999Z`;
+
+        const { data, error } = await supabase
+            .from('maintenance_tickets')
+            .select('*')
+            .eq('location_id', activeShift.location_id)
+            .gte('created_at', startOfDay)
+            .lte('created_at', endOfDay)
+            .order('created_at', { ascending: false });
+
+        if (data) setTickets(data);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchTickets();
+    }, [activeShift.location_id]);
+
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h3 className="font-bold text-enzi-text flex items-center gap-2">
+                    <ListTodo className="text-enzi-gold" size={22} />
+                    Today's Issues
+                </h3>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="btn-primary flex items-center gap-2 py-2 px-3 text-sm"
+                >
+                    <Plus size={16} />
+                    Report Issue
+                </button>
+            </div>
+
+            <div className="space-y-3">
+                {loading ? (
+                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-enzi-muted" /></div>
+                ) : tickets.length === 0 ? (
+                    <div className="card-panel p-8 text-center border-dashed">
+                        <CheckCircle2 className="mx-auto text-green-500/50 mb-2" size={32} />
+                        <p className="text-enzi-muted italic">No issues reported today.</p>
+                        <p className="text-xs text-enzi-muted/50 mt-1">Everything is running smoothly!</p>
+                    </div>
+                ) : (
+                    tickets.map(ticket => (
+                        <div key={ticket.id} className="bg-enzi-black p-4 rounded-lg border border-enzi-muted/20 flex gap-3">
+                            <div className="mt-1 shrink-0">
+                                <AlertTriangle className="text-amber-500" size={18} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start">
+                                    <h4 className="font-bold text-enzi-text text-sm">{ticket.equipment_name}</h4>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${ticket.status === 'open' ? 'bg-red-900/30 text-red-400' :
+                                        ticket.status === 'fundi_scheduled' ? 'bg-blue-900/30 text-blue-400' :
+                                            'bg-green-900/30 text-green-400'
+                                        }`}>
+                                        {ticket.status === 'fundi_scheduled' ? 'SCHEDULED' : ticket.status}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-enzi-muted mt-1 break-words">{ticket.issue_description}</p>
+                                <div className="mt-2 flex items-center gap-2 text-xs text-enzi-muted/50 font-mono">
+                                    <History size={12} />
+                                    {new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {showModal && (
+                <ReportIssueModal
+                    activeShift={activeShift}
+                    onClose={() => setShowModal(false)}
+                    onSuccess={() => {
+                        setShowModal(false);
+                        fetchTickets();
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+function ReportIssueModal({ activeShift, onClose, onSuccess }) {
+    const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({
         category: '',
         issue_description: ''
     });
 
     const handleSubmit = async () => {
-        if (!form.equipment_name || !form.issue_description) return;
+        if (!form.category || !form.issue_description) return;
         setLoading(true);
-        setSuccess(false);
 
         try {
             const { error } = await supabase.from('maintenance_tickets').insert([
                 {
                     location_id: activeShift.location_id,
-                    equipment_name: form.category, // Using equipment_name for category compatibility
+                    equipment_name: form.category,
                     issue_description: form.issue_description,
                     status: 'open'
                 }
             ]);
 
             if (error) throw error;
-            setForm({ category: '', issue_description: '' });
-            setSuccess(true);
-            setTimeout(() => setSuccess(false), 3000);
+            onSuccess();
         } catch (error) {
             console.error("Error submitting ticket:", error);
             alert("Failed to submit ticket");
@@ -459,46 +811,62 @@ function MaintenanceSection({ activeShift }) {
     };
 
     return (
-        <div className="space-y-4">
-            <div className="card-panel p-6">
-                <h3 className="font-bold mb-4 flex items-center gap-2 text-enzi-text">
-                    <AlertTriangle className="w-5 h-5 text-enzi-gold" /> Report Issue
-                </h3>
-                <div className="grid gap-4">
-                    <select
-                        className="input-field"
-                        value={form.category}
-                        onChange={e => setForm({ ...form, category: e.target.value })}
-                    >
-                        <option value="">Select Category...</option>
-                        <option value="Customer">Customer</option>
-                        <option value="Supply">Supply</option>
-                        <option value="Machines">Machines</option>
-                        <option value="General">General</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    <textarea
-                        placeholder="Describe the issue..."
-                        className="input-field"
-                        rows="3"
-                        value={form.issue_description}
-                        onChange={e => setForm({ ...form, issue_description: e.target.value })}
-                    ></textarea>
-
-                    {success && (
-                        <div className="p-3 bg-green-900/30 text-green-400 border border-green-900/50 rounded-lg flex items-center gap-2 text-sm">
-                            <Check size={16} /> Ticket submitted successfully!
-                        </div>
-                    )}
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="btn-primary flex justify-center items-center gap-2 disabled:opacity-50"
-                    >
-                        {loading ? <Loader2 className="animate-spin" /> : <Wrench size={18} />}
-                        Log Ticket
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="card-panel p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg text-enzi-text flex items-center gap-2">
+                        <AlertTriangle className="text-enzi-gold" size={20} />
+                        Report Issue
+                    </h3>
+                    <button onClick={onClose} className="text-enzi-muted hover:text-white">
+                        <X size={20} />
                     </button>
+                </div>
+
+                <div className="grid gap-4">
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-enzi-muted uppercase">Category</label>
+                        <select
+                            className="input-field w-full"
+                            value={form.category}
+                            onChange={e => setForm({ ...form, category: e.target.value })}
+                        >
+                            <option value="">Select Category...</option>
+                            <option value="Customer">Customer</option>
+                            <option value="Supply">Supply</option>
+                            <option value="Machines">Machines</option>
+                            <option value="General">General</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-enzi-muted uppercase">Description</label>
+                        <textarea
+                            placeholder="Describe the issue..."
+                            className="input-field w-full"
+                            rows="3"
+                            value={form.issue_description}
+                            onChange={e => setForm({ ...form, issue_description: e.target.value })}
+                        ></textarea>
+                    </div>
+
+                    <div className="flex gap-3 mt-2">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-2 rounded-lg border border-enzi-muted/20 text-enzi-muted hover:bg-white/5 transition font-semibold text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading || !form.category || !form.issue_description}
+                            className="flex-1 btn-primary flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={16} /> : <Wrench size={16} />}
+                            Log Ticket
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, CheckCircle2, Send, MapPin, ListTodo, AlertTriangle, Calendar, ClipboardList, MessageSquare, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle2, Send, MapPin, ListTodo, AlertTriangle, Calendar, ClipboardList, MessageSquare, ArrowRight, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function CorePage() {
@@ -81,6 +81,8 @@ export default function CorePage() {
         }
     };
 
+    const [activeAuditTab, setActiveAuditTab] = useState('wastage');
+
     const getTimeAgo = (dateString) => {
         const now = new Date();
         const past = new Date(dateString);
@@ -116,16 +118,33 @@ export default function CorePage() {
                     </div>
                 </Link>
 
-                {/* Placeholder for future hubs (e.g. Inventory, Staff) */}
-                <div className="card-panel p-6 flex flex-col items-start gap-4 opacity-50 grayscale cursor-not-allowed">
-                    <div className="p-3 bg-enzi-black rounded-xl border border-enzi-muted/20">
-                        <ListTodo className="text-enzi-muted" size={28} />
+                {/* Navigation Card: Shift Reports */}
+                <Link to="/core/shift-reports" className="card-panel p-6 flex flex-col items-start gap-4 hover:border-enzi-gold transition group bg-gradient-to-br from-enzi-card to-enzi-card/50">
+                    <div className="p-3 bg-enzi-black rounded-xl border border-enzi-muted/20 group-hover:border-enzi-gold/50 transition">
+                        <ClipboardList className="text-enzi-gold" size={28} />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-enzi-text mb-1">Shift Reports</h2>
+                        <p className="text-sm text-enzi-muted">View Daily Operational Summaries</p>
+                    </div>
+                    <div className="mt-auto pt-2 text-xs font-bold text-enzi-gold uppercase tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
+                        View Reports <ArrowRight size={14} />
+                    </div>
+                </Link>
+
+                {/* Inventory Manager */}
+                <Link to="/core/inventory" className="card-panel p-6 flex flex-col items-start gap-4 hover:border-enzi-gold transition group bg-gradient-to-br from-enzi-card to-enzi-card/50">
+                    <div className="p-3 bg-enzi-black rounded-xl border border-enzi-muted/20 group-hover:border-enzi-gold/50 transition">
+                        <Package className="text-enzi-gold" size={28} />
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-enzi-text mb-1">Inventory Manager</h2>
-                        <p className="text-sm text-enzi-muted">Coming Soon: Stock levels & Supplier orders</p>
+                        <p className="text-sm text-enzi-muted">Manage Stock Items & Suppliers</p>
                     </div>
-                </div>
+                    <div className="mt-auto pt-2 text-xs font-bold text-enzi-gold uppercase tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
+                        Manage Items <ArrowRight size={14} />
+                    </div>
+                </Link>
             </div>
 
             <div className="grid gap-6">
@@ -145,57 +164,116 @@ export default function CorePage() {
                             />
                         </div>
 
-                        <div className="card-panel p-6">
-                            <h2 className="text-lg font-bold mb-4 text-enzi-text flex items-center gap-2">
-                                <AlertTriangle className="text-red-500" size={20} />
-                                Live Wastage Feed
-                            </h2>
-                            <div className="space-y-4">
-                                {loadingAudit ? (
-                                    <div className="flex justify-center p-4"><Loader2 className="animate-spin text-enzi-muted" /></div>
-                                ) : wastageFeed.length === 0 ? (
-                                    <p className="text-sm text-enzi-muted italic px-2">No wastage logged on this date.</p>
-                                ) : (
-                                    wastageFeed.map(log => (
-                                        <div key={log.id} className="text-sm border-l-2 border-red-500 pl-4 py-2 bg-red-500/5 rounded-r-lg">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className="font-bold text-enzi-text">{log.item_type}</span>
-                                                <span className="text-[10px] font-mono text-enzi-muted">{getTimeAgo(log.logged_at)}</span>
-                                            </div>
-                                            <span className="block text-xs text-enzi-muted">
-                                                {log.shifts?.locations?.name || 'Unknown'} • {log.reason} • Quantity: {log.quantity}
-                                            </span>
-                                        </div>
-                                    ))
-                                )}
+                        <div className="card-panel p-0 overflow-hidden">
+                            <div className="flex border-b border-enzi-muted/10">
+                                <button
+                                    onClick={() => setActiveAuditTab('wastage')}
+                                    className={`flex-1 py-4 px-6 text-sm font-bold flex items-center justify-center gap-2 transition-colors relative
+                                    ${activeAuditTab === 'wastage' ? 'text-enzi-text bg-white/5' : 'text-enzi-muted hover:text-enzi-text hover:bg-white/5'}
+                                `}
+                                >
+                                    <AlertTriangle className={activeAuditTab === 'wastage' ? 'text-red-500' : ''} size={18} />
+                                    Live Wastage
+                                    <span className={`text-xs ml-1 px-1.5 py-0.5 rounded-full ${activeAuditTab === 'wastage' ? 'bg-red-900/40 text-red-400' : 'bg-enzi-muted/20 text-enzi-muted'}`}>
+                                        {wastageFeed.length}
+                                    </span>
+                                    {activeAuditTab === 'wastage' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 animate-in fade-in zoom-in-50 duration-200"></div>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveAuditTab('issues')}
+                                    className={`flex-1 py-4 px-6 text-sm font-bold flex items-center justify-center gap-2 transition-colors relative
+                                    ${activeAuditTab === 'issues' ? 'text-enzi-text bg-white/5' : 'text-enzi-muted hover:text-enzi-text hover:bg-white/5'}
+                                `}
+                                >
+                                    <ListTodo className={activeAuditTab === 'issues' ? 'text-enzi-gold' : ''} size={18} />
+                                    Reported Issues
+                                    <span className={`text-xs ml-1 px-1.5 py-0.5 rounded-full ${activeAuditTab === 'issues' ? 'bg-enzi-gold/20 text-enzi-gold' : 'bg-enzi-muted/20 text-enzi-muted'}`}>
+                                        {maintenanceTickets.length}
+                                    </span>
+                                    {activeAuditTab === 'issues' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-enzi-gold animate-in fade-in zoom-in-50 duration-200"></div>
+                                    )}
+                                </button>
                             </div>
-                        </div>
 
-                        <div className="card-panel p-6">
-                            <h2 className="text-lg font-bold mb-4 text-enzi-text flex items-center gap-2">
-                                <ListTodo className="text-enzi-gold" size={20} />
-                                Maintenance Status
-                            </h2>
-                            <div className="space-y-3">
+                            <div className="p-6 min-h-[300px]">
                                 {loadingAudit ? (
-                                    <div className="flex justify-center p-4"><Loader2 className="animate-spin text-enzi-muted" /></div>
-                                ) : maintenanceTickets.length === 0 ? (
-                                    <p className="text-sm text-enzi-muted italic px-2">No tickets logged on this date.</p>
+                                    <div className="flex justify-center p-12"><Loader2 className="animate-spin text-enzi-muted" size={32} /></div>
                                 ) : (
-                                    maintenanceTickets.map(ticket => (
-                                        <div key={ticket.id} className="flex justify-between items-center bg-white/5 border border-enzi-muted/10 p-3 rounded-xl">
-                                            <div>
-                                                <span className="block text-sm font-bold text-enzi-text">{ticket.equipment_name}</span>
-                                                <span className="text-xs text-enzi-muted">Reported at {ticket.locations?.name} • {getTimeAgo(ticket.created_at)}</span>
+                                    <>
+                                        {activeAuditTab === 'wastage' && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                                {wastageFeed.length === 0 ? (
+                                                    <div className="text-center py-12 text-enzi-muted italic">
+                                                        <CheckCircle2 className="mx-auto mb-2 text-green-500/50" size={32} />
+                                                        No wastage logged on this date.
+                                                    </div>
+                                                ) : (
+                                                    wastageFeed.map(log => (
+                                                        <div key={log.id} className="text-sm border-l-2 border-red-500 pl-4 py-3 bg-red-500/5 rounded-r-lg hover:bg-red-500/10 transition">
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                <span className="font-bold text-enzi-text text-base">{log.item_type}</span>
+                                                                <span className="text-[10px] font-mono text-enzi-muted">{getTimeAgo(log.logged_at)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-end">
+                                                                <span className="text-xs text-enzi-muted/80 block max-w-[80%]">
+                                                                    {log.reason}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-enzi-text bg-white/10 px-2 py-0.5 rounded">
+                                                                    Qty: {log.quantity}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-2 text-[10px] text-enzi-muted uppercase tracking-wider flex items-center gap-1">
+                                                                <MapPin size={10} />
+                                                                {log.shifts?.locations?.name || 'Unknown Location'}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${ticket.status === 'open' ? 'bg-amber-900/40 text-amber-400' :
-                                                ticket.status === 'fundi_scheduled' ? 'bg-blue-900/40 text-blue-400' :
-                                                    'bg-green-900/40 text-green-400'
-                                                }`}>
-                                                {ticket.status === 'fundi_scheduled' ? 'SCHEDULED' : ticket.status}
-                                            </span>
-                                        </div>
-                                    ))
+                                        )}
+
+                                        {activeAuditTab === 'issues' && (
+                                            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                                {maintenanceTickets.length === 0 ? (
+                                                    <div className="text-center py-12 text-enzi-muted italic">
+                                                        <CheckCircle2 className="mx-auto mb-2 text-green-500/50" size={32} />
+                                                        No tickets logged on this date.
+                                                    </div>
+                                                ) : (
+                                                    maintenanceTickets.map(ticket => (
+                                                        <div key={ticket.id} className="flex justify-between items-start bg-white/5 border border-enzi-muted/10 p-4 rounded-xl gap-4 hover:border-enzi-gold/30 transition">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className="text-[10px] font-bold text-enzi-gold bg-enzi-gold/10 px-2 py-0.5 rounded-full uppercase tracking-wider border border-enzi-gold/20">
+                                                                        {ticket.equipment_name}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-enzi-muted font-mono whitespace-nowrap">
+                                                                        {getTimeAgo(ticket.created_at)}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-sm font-medium text-enzi-text mb-2 break-words leading-relaxed">
+                                                                    {ticket.issue_description}
+                                                                </p>
+                                                                <p className="text-xs text-enzi-muted flex items-center gap-1.5 opacity-60">
+                                                                    <MapPin size={12} />
+                                                                    {ticket.locations?.name || 'Unknown Location'}
+                                                                </p>
+                                                            </div>
+                                                            <span className={`shrink-0 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase border ${ticket.status === 'open' ? 'bg-red-900/20 text-red-400 border-red-900/30' :
+                                                                ticket.status === 'fundi_scheduled' ? 'bg-blue-900/20 text-blue-400 border-blue-900/30' :
+                                                                    'bg-green-900/20 text-green-400 border-green-900/30'
+                                                                }`}>
+                                                                {ticket.status === 'fundi_scheduled' ? 'SCHEDULED' : ticket.status}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>

@@ -4,9 +4,12 @@ import { supabase } from '../lib/supabaseClient';
 import { Users, Coffee, Briefcase, ChevronLeft, Delete } from 'lucide-react';
 import hzeLogo from '../assets/hze-icon.png';
 import hzeFullLogo from '../assets/hze-full-logo.png';
+import hzeFullLogoColored from '../assets/hze-full-logo-colored.png';
+import { useTheme } from '../contexts/ThemeContext';
 
 const LoginPage = () => {
     const { login } = useAuth();
+    const { theme } = useTheme();
     const [step, setStep] = useState('role'); // 'role', 'user', 'pin'
     // const [selectedRole, setSelectedRole] = useState(null); // Unused
     const [profiles, setProfiles] = useState([]);
@@ -107,7 +110,7 @@ const LoginPage = () => {
 
                     {step === 'role' ? (
                         <div className="flex flex-col items-center gap-3 mb-2">
-                            <img src={hzeFullLogo} alt="Shiftflow Logo" className="w-48 opacity-90 object-contain" />
+                            <img src={theme === 'light' ? hzeFullLogoColored : hzeFullLogo} alt="Shiftflow Logo" className="w-48 opacity-90 object-contain" />
                         </div>
                     ) : (
                         <h1 className="text-2xl font-bold text-enzi-text tracking-wide uppercase">Shiftflow</h1>
