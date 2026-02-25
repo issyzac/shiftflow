@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Clock, User, ChevronDown, ChevronUp, AlertTriangle, ListTodo, CheckCircle2, Circle, Check } from 'lucide-react';
+import { Calendar, MapPin, Clock, User, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle, ListTodo, CheckCircle2, Circle, Check } from 'lucide-react';
 
 export default function ShiftReportsPage() {
     const { user } = useAuth();
@@ -14,6 +14,16 @@ export default function ShiftReportsPage() {
         return new Date(d.getTime() - offset).toISOString().split('T')[0];
     });
     const [expandedShiftId, setExpandedShiftId] = useState(null);
+
+    const changeDate = (days) => {
+        const [year, month, day] = filterDate.split('-').map(Number);
+        const d = new Date(year, month - 1, day);
+        d.setDate(d.getDate() + days);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        setFilterDate(`${yyyy}-${mm}-${dd}`);
+    };
 
     useEffect(() => {
         fetchShifts();
@@ -34,7 +44,7 @@ export default function ShiftReportsPage() {
                 .from('shifts')
                 .select(`
                     *,
-                    profiles:user_id (name),
+                    profiles:bic_id (name),
                     locations (name)
                 `)
                 .gte('start_time', startOfDay)
@@ -59,16 +69,32 @@ export default function ShiftReportsPage() {
             </header>
 
             {/* Filter */}
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-enzi-muted/10">
+            <div className="flex flex-wrap items-center gap-4 bg-white/5 p-4 rounded-xl border border-enzi-muted/10">
                 <span className="text-sm font-bold text-enzi-muted uppercase tracking-wider flex items-center gap-2">
                     <Calendar size={16} className="text-enzi-gold" /> Filter Date:
                 </span>
-                <input
-                    type="date"
-                    value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
-                    className="bg-enzi-black border border-enzi-muted/30 rounded-lg px-3 py-1.5 text-sm text-enzi-text focus:border-enzi-gold outline-none"
-                />
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => changeDate(-1)}
+                        className="p-1.5 rounded-lg bg-enzi-black hover:bg-white/10 text-enzi-muted hover:text-enzi-gold transition-colors border border-white/10"
+                        title="Previous Day"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    <input
+                        type="date"
+                        value={filterDate}
+                        onChange={(e) => setFilterDate(e.target.value)}
+                        className="bg-enzi-black border border-enzi-muted/30 rounded-lg px-3 py-1.5 text-sm text-enzi-text focus:border-enzi-gold outline-none"
+                    />
+                    <button
+                        onClick={() => changeDate(1)}
+                        className="p-1.5 rounded-lg bg-enzi-black hover:bg-white/10 text-enzi-muted hover:text-enzi-gold transition-colors border border-white/10"
+                        title="Next Day"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
             </div>
 
             {/* Shifts List */}
@@ -165,6 +191,61 @@ function ShiftCard({ shift, expanded, onToggle }) {
         const end = new Date(shift.end_time);
         const diffHrs = (end - start) / (1000 * 60 * 60);
         return `${diffHrs.toFixed(1)} hrs`;
+    };
+
+    const renderChecklistSummary = (title, checklistObj, colorClass) => {
+        if (!checklistObj || Object.keys(checklistObj).length === 0) return null;
+
+        let total = 0;
+        let done = 0;
+        const notesList = [];
+
+        Object.entries(checklistObj).forEach(([catKey, category]) => {
+            if (typeof category === 'object') {
+                Object.entries(category).forEach(([key, val]) => {
+                    if (key === 'notes') {
+                        if (val && typeof val === 'string' && val.trim() !== '') {
+                            notesList.push({ category: catKey, note: val });
+                        }
+                    } else {
+                        total++;
+                        if (val === true || (typeof val === 'string' && val.trim() !== '')) {
+                            done++;
+                        }
+                    }
+                });
+            }
+        });
+
+        if (total === 0) return null;
+
+        return (
+            <div className="bg-white/5 border border-white/10 p-3 rounded-lg mb-4 space-y-3">
+                <div>
+                    <h5 className={`text-sm font-bold ${colorClass} mb-2 flex items-center gap-2`}>
+                        <CheckCircle2 size={14} /> {title}
+                    </h5>
+                    <div className="flex justify-between text-xs text-enzi-muted mb-1">
+                        <span>Completion</span>
+                        <span className="font-mono">{done}/{total}</span>
+                    </div>
+                    <div className="h-1.5 bg-enzi-black rounded-full overflow-hidden">
+                        <div className={`h-full ${done === total ? 'bg-green-500' : 'bg-enzi-gold'} transition-all`} style={{ width: `${(done / total) * 100}%` }}></div>
+                    </div>
+                </div>
+                {notesList.length > 0 && (
+                    <div className="space-y-2 mt-3 pt-3 border-t border-white/5">
+                        <h6 className="text-[10px] font-bold text-enzi-muted uppercase tracking-wider">Comments & Notes</h6>
+                        {notesList.map((n, i) => (
+                            <div key={i} className="bg-enzi-black/50 p-2 rounded text-sm text-enzi-text border border-white/5">
+                                <span className="text-[10px] text-enzi-muted uppercase block mb-1">{n.category.replace('_', ' ')}</span>
+                                {n.note}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -266,7 +347,10 @@ function ShiftCard({ shift, expanded, onToggle }) {
 
                                 {/* Right Col: Tasks */}
                                 <div>
-                                    <h4 className="text-sm font-bold text-enzi-gold uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    {renderChecklistSummary("Opening Checklist", shift.opening_checklist, "text-enzi-gold")}
+                                    {renderChecklistSummary("Closing Checklist", shift.closing_checklist, "text-red-400")}
+
+                                    <h4 className="text-sm font-bold text-enzi-gold uppercase tracking-widest mb-3 flex items-center gap-2 mt-4">
                                         <ListTodo size={14} /> Checklist Tasks
                                     </h4>
                                     <div className="space-y-2">

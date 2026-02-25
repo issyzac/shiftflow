@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { ClipboardList, Trash2, Wrench, PackagePlus, AlertTriangle, Plus, History, LogOut, Loader2, Check, ListTodo, Repeat, Calendar, Edit, X, PlusCircle, CheckCircle2, Search } from 'lucide-react';
 
 export default function DashboardPage() {
+    const navigate = useNavigate();
     const { user, activeShift, refreshShift } = useAuth();
     const [activeTab, setActiveTab] = useState('wastage');
     const [tasks, setTasks] = useState([]);
-    const [showEndShiftDialog, setShowEndShiftDialog] = useState(false);
     const [showManageBriefing, setShowManageBriefing] = useState(false);
 
     const [elapsedTime, setElapsedTime] = useState('');
@@ -80,24 +81,8 @@ export default function DashboardPage() {
 
 
 
-    const handleEndShift = async () => {
-        if (!activeShift) return;
-        setShowEndShiftDialog(false);
-
-        try {
-            const { error } = await supabase
-                .from('shifts')
-                .update({ end_time: new Date().toISOString() })
-                .eq('id', activeShift.id);
-
-            if (error) throw error;
-
-            await refreshShift();
-            // App.jsx will automatically route back to logic
-        } catch (err) {
-            console.error('Error ending shift:', err);
-            alert('Failed to end shift.');
-        }
+    const handleEndShift = () => {
+        navigate('/closing');
     };
 
     if (!activeShift) {
@@ -109,8 +94,14 @@ export default function DashboardPage() {
             <header className="flex justify-between items-center bg-enzi-card p-4 rounded-xl border border-enzi-muted/10 backdrop-blur-sm shadow-sm">
                 <div>
                     <h2 className="text-xl font-bold text-enzi-text">Barista Dashboard</h2>
-                    <p className="text-sm text-enzi-muted font-medium">
-                        Shift Active • BIC: {user?.name || 'Unknown'}
+                    <p className="text-sm text-enzi-muted font-medium flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${activeShift?.shift_type === 'morning' ? 'bg-blue-900/40 text-blue-300 border border-blue-500/30' :
+                                activeShift?.shift_type === 'afternoon' ? 'bg-purple-900/40 text-purple-300 border border-purple-500/30' :
+                                    'bg-green-900/40 text-green-400 border border-green-500/30'
+                            }`}>
+                            {activeShift?.shift_type ? `${activeShift.shift_type} Shift` : 'Active Shift'}
+                        </span>
+                        • BIC: {user?.name || 'Unknown'}
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -123,7 +114,7 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <button
-                        onClick={() => setShowEndShiftDialog(true)}
+                        onClick={handleEndShift}
                         className="flex items-center gap-2 px-4 py-2 bg-red-900/20 text-red-400 border border-red-900/30 rounded-lg hover:bg-red-900/40 transition font-semibold text-sm"
                     >
                         <LogOut size={16} /> End Shift
@@ -196,19 +187,6 @@ export default function DashboardPage() {
                 {activeTab === 'restock' && <RestockSection activeShift={activeShift} />}
                 {activeTab === 'maintenance' && <MaintenanceSection activeShift={activeShift} />}
             </div>
-
-            {/* End Shift Confirmation Dialog */}
-            {showEndShiftDialog && (
-                <ConfirmDialog
-                    title="End Shift?"
-                    message="Are you sure you want to end your shift? This action cannot be undone."
-                    confirmText="End Shift"
-                    cancelText="Cancel"
-                    onConfirm={handleEndShift}
-                    onCancel={() => setShowEndShiftDialog(false)}
-                    danger
-                />
-            )}
 
             {/* Manage Briefing Modal */}
             {showManageBriefing && (

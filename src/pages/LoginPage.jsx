@@ -10,8 +10,9 @@ import { useTheme } from '../contexts/ThemeContext';
 const LoginPage = () => {
     const { login } = useAuth();
     const { theme } = useTheme();
-    const [step, setStep] = useState('role'); // 'role', 'user', 'pin'
-    // const [selectedRole, setSelectedRole] = useState(null); // Unused
+    const [step, setStep] = useState('role'); // 'role', 'shift', 'user', 'pin'
+    const [selectedRole, setSelectedRole] = useState(null);
+    const [selectedShiftType, setSelectedShiftType] = useState(null);
     const [profiles, setProfiles] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [pin, setPin] = useState('');
@@ -25,7 +26,20 @@ const LoginPage = () => {
     }, [pin]);
 
     const handleRoleSelect = async (role) => {
-        // setSelectedRole(role); 
+        setSelectedRole(role);
+        if (role === 'barista') {
+            setStep('shift');
+        } else {
+            fetchUsersForRole(role);
+        }
+    };
+
+    const handleShiftSelect = (shiftType) => {
+        setSelectedShiftType(shiftType);
+        fetchUsersForRole('barista');
+    };
+
+    const fetchUsersForRole = async (role) => {
         setLoadingUsers(true);
         setError('');
 
@@ -65,7 +79,7 @@ const LoginPage = () => {
     const handleLoginSubmit = async () => {
         if (pin.length !== 4) return;
 
-        const result = await login(selectedUser.id, pin);
+        const result = await login(selectedUser.id, pin, selectedShiftType);
         if (!result.success) {
             setError(result.error === 'Invalid PIN' ? 'Incorrect PIN. Please try again.' : 'Login failed.');
             setPin('');
@@ -87,9 +101,16 @@ const LoginPage = () => {
             setPin('');
             setError('');
         } else if (step === 'user') {
-            setStep('role');
+            if (selectedRole === 'barista') {
+                setStep('shift');
+            } else {
+                setStep('role');
+            }
             setProfiles([]);
-            // setSelectedRole(null);
+        } else if (step === 'shift') {
+            setStep('role');
+            setSelectedShiftType(null);
+            setSelectedRole(null);
         }
     };
 
@@ -118,6 +139,7 @@ const LoginPage = () => {
 
                     <p className="text-sm text-enzi-muted font-medium mt-1">
                         {step === 'role' && "Select Your Role"}
+                        {step === 'shift' && "Select Shift Type"}
                         {step === 'user' && "Who are you?"}
                         {step === 'pin' && `Welcome, ${selectedUser?.name}`}
                     </p>
@@ -143,6 +165,22 @@ const LoginPage = () => {
                                 icon={<Users size={32} />}
                                 label="Core"
                                 onClick={() => handleRoleSelect('core')}
+                            />
+                        </div>
+                    )}
+
+                    {/* Step 1.5: Shift Type Selection (Barista Only) */}
+                    {step === 'shift' && (
+                        <div className="space-y-4">
+                            <RoleButton
+                                icon={<div className="text-blue-400 font-bold text-2xl">☀️</div>}
+                                label="Morning Shift"
+                                onClick={() => handleShiftSelect('morning')}
+                            />
+                            <RoleButton
+                                icon={<div className="text-purple-400 font-bold text-2xl">🌙</div>}
+                                label="Afternoon Shift"
+                                onClick={() => handleShiftSelect('afternoon')}
                             />
                         </div>
                     )}

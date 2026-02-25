@@ -4,6 +4,7 @@ import DashboardPage from './pages/DashboardPage';
 import CorePage from './pages/CorePage';
 import CommunicationsPage from './pages/CommunicationsPage';
 import ShiftReportsPage from './pages/ShiftReportsPage';
+import ClosingPage from './pages/ClosingPage';
 import InventoryPage from './pages/InventoryPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -77,6 +78,9 @@ const AppContent = () => {
               } />
               <Route path="/dashboard" element={
                 activeShift ? <DashboardPage /> : <Navigate to="/" replace />
+              } />
+              <Route path="/closing" element={
+                activeShift ? <ClosingPage /> : <Navigate to="/" replace />
               } />
             </>
           )}

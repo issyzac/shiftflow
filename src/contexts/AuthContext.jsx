@@ -9,11 +9,17 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeShift, setActiveShift] = useState(null);
+    const [intendedShiftType, setIntendedShiftType] = useState(null);
 
     // Restore session from localStorage on mount
     useEffect(() => {
         const restoreSession = async () => {
             const storedUserId = localStorage.getItem('shiftflow_user_id');
+            const storedShiftType = localStorage.getItem('shiftflow_intended_shift_type');
+            if (storedShiftType) {
+                setIntendedShiftType(storedShiftType);
+            }
+
             if (storedUserId) {
                 try {
                     const { data: profile, error } = await supabase
@@ -30,6 +36,7 @@ export const AuthProvider = ({ children }) => {
                         }
                     } else {
                         localStorage.removeItem('shiftflow_user_id');
+                        localStorage.removeItem('shiftflow_intended_shift_type');
                     }
                 } catch (err) {
                     console.error("Session restore error", err);
@@ -61,7 +68,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const login = async (userId, pin) => {
+    const login = async (userId, pin, shiftType = null) => {
         try {
             // 1. Verify User and PIN
             // In a real secure app, we wouldn't fetch the PIN. We'd call an RPC or rely on Auth.
@@ -80,9 +87,16 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('Invalid PIN');
             }
 
-            // 2. Set User Session
+            // 2. Set User Session & Intended Shift
             setUser(profile);
             localStorage.setItem('shiftflow_user_id', profile.id);
+            if (shiftType) {
+                setIntendedShiftType(shiftType);
+                localStorage.setItem('shiftflow_intended_shift_type', shiftType);
+            } else {
+                setIntendedShiftType(null);
+                localStorage.removeItem('shiftflow_intended_shift_type');
+            }
 
             // 3. Check Context (e.g. active shift)
             if (profile.role === 'barista') {
@@ -99,7 +113,9 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setUser(null);
         setActiveShift(null);
+        setIntendedShiftType(null);
         localStorage.removeItem('shiftflow_user_id');
+        localStorage.removeItem('shiftflow_intended_shift_type');
     };
 
     // Helper to refresh shift status (e.g. after starting/ending a shift)
@@ -112,6 +128,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         activeShift,
+        intendedShiftType,
         loading,
         login,
         logout,
